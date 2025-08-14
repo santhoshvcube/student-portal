@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1",
+    "studentId": "STU001",
+    "name": "John Doe",
+    "photo": "",
+    "email": "john.doe@example.com",
+    "mobile": "1234567890",
+    "batchId": "1",
+    "education": [],
+    "active": true,
+    "attendance": [],
+    "qrCode": "",
+    "profileComplete": true
+  }
+]

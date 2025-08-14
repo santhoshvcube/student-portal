@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS for the VCube Portal */
+.animated-link-button {
+  @apply px-8 py-4 rounded-lg shadow-lg font-semibold transition duration-300 ease-in-out transform hover:scale-105 hover:shadow-xl;
+}
+
+.dashboard-card {
+  @apply bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center transform transition duration-300 hover:scale-[1.02] hover:shadow-lg;
+}
+
+.vcube-input {
+  @apply w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  width: 8px; /* For vertical scrollbars, if any */
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Additional custom styles for better UX */
+.glass-effect {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.login-button {
+  @apply px-8 py-3 rounded-full text-lg font-semibold transition duration-300;
+}
