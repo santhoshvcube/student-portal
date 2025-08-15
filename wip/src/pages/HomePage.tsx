@@ -42,7 +42,6 @@ export default function HomePage() {
         />
       </header>
 
-
       {/* CloudEdge.AI Section */}
       <div className="bg-gray-900 text-white p-8 flex flex-col items-center justify-center">
         <motion.div

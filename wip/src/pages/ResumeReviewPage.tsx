@@ -5,7 +5,7 @@ import { Upload, FileText } from 'lucide-react';
 const ResumeReviewPage: React.FC = () => {
   const [resumeText, setResumeText] = useState('');
   const [jobDescription, setJobDescription] = useState('');
-  const API_URL = 'http://localhost:3000/api';
+  const API_URL = 'http://localhost:3003/api';
 
   const handleAnalyze = async () => {
     const reviewData = {

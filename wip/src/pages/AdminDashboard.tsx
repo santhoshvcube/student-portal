@@ -197,12 +197,7 @@ const AdminDashboard: React.FC = () => {
         <Home className="w-6 h-6 text-orange-500" />
       </motion.button>
 
-      {/* VCube Logo at top left */}
-      <img
-        src="/vcubelogo.png"
-        alt="VCube Logo"
-        className="absolute top-8 left-8 h-20 w-auto rounded-2xl shadow-lg z-10 transition-transform duration-300 hover:scale-110 hover:shadow-2xl"
-      />
+
       {/* AWS Logo at top right */}
       <img
         src="/aws.png"

@@ -29,7 +29,7 @@ const BatchManagementPage: React.FC = () => {
       mocks: 0,
   });
 
-  const API_URL = 'http://localhost:3000/api';
+  const API_URL = 'http://localhost:3003/api';
 
   const handleCreateBatch = async () => {
     const batchData = {

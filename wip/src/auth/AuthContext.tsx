@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (identifier: string, credential: string, role: 'admin' | 'student'): Promise<User | null> => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/login`, {
+      const response = await fetch(`http://localhost:3003/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

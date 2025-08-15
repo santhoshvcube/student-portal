@@ -46,7 +46,7 @@ const ManageStudentsPage: React.FC<ManageStudentsPageProps> = () => {
   );
 
   // Handle single student add
-  const API_URL = 'http://localhost:3000/api';
+  const API_URL = 'http://localhost:3003/api';
 
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();

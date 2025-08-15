@@ -106,7 +106,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  const API_URL = '/api';
+  const API_URL = 'http://localhost:3003/api';
 
   const refreshData = async () => {
     try {
@@ -139,7 +139,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     refreshData();
 
-    const socket = io();
+    const socket = io('http://localhost:3003');
     socket.on('data_changed', () => {
       refreshData();
     });

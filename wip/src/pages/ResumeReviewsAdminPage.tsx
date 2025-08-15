@@ -7,7 +7,7 @@ const ResumeReviewsAdminPage: React.FC = () => {
   const [filteredReviews, setFilteredReviews] = useState<any[]>([]);
   const [filter, setFilter] = useState({ student: '', batch: '', score: '' });
 
-  const API_URL = 'http://localhost:3000/api';
+  const API_URL = 'http://localhost:3003/api';
 
   const fetchReviews = async () => {
     try {

@@ -22,7 +22,7 @@ import {
  ClipboardList
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import vcubeLogo from '/vcubelogo.png';
+
 
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();

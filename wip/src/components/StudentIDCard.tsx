@@ -22,7 +22,7 @@ const StudentIDCard: React.FC<{ student: Student }> = ({ student }) => {
         }}
       >
         <div className="flex justify-between items-start">
-          <img src="/vcubelogon.png" alt="V Cube Logo" className="h-10" />
+
           <img src="/aws.png" alt="AWS Logo" className="h-10" />
         </div>
         <div className="flex flex-col items-center text-center my-2">
