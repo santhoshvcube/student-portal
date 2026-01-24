@@ -79,10 +79,17 @@ const ManageStudentsPage: React.FC<ManageStudentsPageProps> = () => {
           setBatch('');
           setShowAddModal(false);
         } else {
-          console.error('Failed to add student:', await response.json());
+          if (response.status === 409) {
+            alert('Student with same ID, email, or mobile already exists.');
+          } else {
+            const err = await response.json().catch(() => ({}));
+            console.error('Failed to add student:', err);
+            alert(err.error || err.message || 'Failed to add student.');
+          }
         }
       } catch (error) {
         console.error('Failed to add student:', error);
+        alert('Failed to add student. See console for details.');
       }
     }
   };
@@ -330,7 +337,7 @@ const ManageStudentsPage: React.FC<ManageStudentsPageProps> = () => {
                   <tbody>
                     {filteredStudents.map((student, idx) => (
                       <tr key={idx} className="hover:bg-gray-50">
-                        <td className="border-b p-4">{student.id}</td>
+                        <td className="border-b p-4">{student.studentId || student.id}</td>
                         <td className="border-b p-4 font-medium">{student.name}</td>
                         <td className="border-b p-4">{student.mobile}</td>
                         <td className="border-b p-4">{student.email}</td>

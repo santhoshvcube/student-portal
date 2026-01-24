@@ -121,10 +121,17 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const schedulesData = await schedulesRes.json();
       const marksData = await marksRes.json();
 
-      const studentsWithMarks = studentsData.map((student: Student) => ({
-        ...student,
-        marks: marksData.filter((mark: any) => mark.studentId === student.id),
-      }));
+      const studentsWithMarks = studentsData.map((student: Student) => {
+        const normalizedStudent = {
+          ...student,
+          studentId: (student as any).studentId || student.id,
+        } as Student;
+        const studentMarks = marksData.filter((mark: any) => mark.studentId === student.id || mark.studentId === normalizedStudent.studentId);
+        return {
+          ...normalizedStudent,
+          marks: studentMarks,
+        };
+      });
 
       setStudents(studentsWithMarks);
       setBatches(batchesData);

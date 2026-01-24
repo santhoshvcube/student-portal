@@ -87,6 +87,10 @@ addColumnIfNotExists('students', 'education', 'TEXT');
       submissionDate TEXT
     )
   `);
+
+  // add schedule columns for student submission tracking
+  addColumnIfNotExists('schedules', 'submittedDateByStudent', 'TEXT');
+  addColumnIfNotExists('schedules', 'status', 'TEXT');
   db.run(`
     CREATE TABLE IF NOT EXISTS interviews (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,21 +126,41 @@ app.get('/api/students', (req, res) => {
       res.status(500).json({ error: err.message });
       return;
     }
-    res.json(rows);
+    const normalized = rows.map((r: any) => ({
+      ...r,
+      // ensure studentId exists for older records
+      studentId: r.studentId || r.id,
+      // parse education if present
+      education: r.education ? JSON.parse(r.education) : [],
+      active: !!r.active,
+      profileComplete: !!r.profileComplete,
+    }));
+    res.json(normalized);
   });
 });
 
 app.post('/api/students', (req, res) => {
   const { id, studentId, name, email, mobile, batchId, active, photo, password, profileComplete } = req.body;
-  const sql = `INSERT INTO students (id, studentId, name, email, mobile, batchId, active, photo, password, profileComplete)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-  db.run(sql, [id, studentId, name, email, mobile, batchId, active, photo, password, profileComplete], function (err) {
+  // Prevent duplicate by studentId, email or mobile
+  const checkSql = 'SELECT id FROM students WHERE studentId = ? OR email = ? OR mobile = ?';
+  db.get(checkSql, [studentId, email, mobile], (err, row) => {
     if (err) {
-      res.status(400).json({ error: err.message });
-      return;
+      return res.status(500).json({ error: err.message });
     }
-    io.emit('data_changed');
-    res.status(201).json({ id: this.lastID });
+    if (row) {
+      return res.status(409).json({ message: 'Student with same ID, email, or mobile already exists.' });
+    }
+
+    const sql = `INSERT INTO students (id, studentId, name, email, mobile, batchId, active, photo, password, profileComplete)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    db.run(sql, [id, studentId, name, email, mobile, batchId, active ? 1 : 0, photo, password, profileComplete ? 1 : 0], function (err) {
+      if (err) {
+        res.status(400).json({ error: err.message });
+        return;
+      }
+      io.emit('data_changed');
+      res.status(201).json({ id });
+    });
   });
 });
 
@@ -325,9 +349,30 @@ app.post('/api/schedules', (req, res) => {
 });
 
 app.put('/api/schedules/:id', (req, res) => {
-  const { batchId, task, assignedDate, submissionDate } = req.body;
-  const sql = 'UPDATE schedules SET batchId = ?, task = ?, assignedDate = ?, submissionDate = ? WHERE id = ?';
-  db.run(sql, [batchId, task, assignedDate, submissionDate, req.params.id], function (err) {
+  const { batchId, task, assignedDate, submissionDate, status } = req.body;
+  let submittedDateByStudent = req.body.submittedDateByStudent;
+  if (status === 'Completed' && !submittedDateByStudent) {
+    submittedDateByStudent = new Date().toISOString();
+  }
+
+  // Build dynamic update to allow partial updates
+  const updates: string[] = [];
+  const params: any[] = [];
+  if (batchId !== undefined) { updates.push('batchId = ?'); params.push(batchId); }
+  if (task !== undefined) { updates.push('task = ?'); params.push(task); }
+  if (assignedDate !== undefined) { updates.push('assignedDate = ?'); params.push(assignedDate); }
+  if (submissionDate !== undefined) { updates.push('submissionDate = ?'); params.push(submissionDate); }
+  if (status !== undefined) { updates.push('status = ?'); params.push(status); }
+  if (submittedDateByStudent !== undefined) { updates.push('submittedDateByStudent = ?'); params.push(submittedDateByStudent); }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'No fields to update.' });
+  }
+
+  const sql = `UPDATE schedules SET ${updates.join(', ')} WHERE id = ?`;
+  params.push(req.params.id);
+
+  db.run(sql, params, function (err) {
     if (err) {
       res.status(400).json({ error: err.message });
       return;
@@ -365,7 +410,11 @@ app.get('/api/marks', async (req, res) => {
 });
 
 app.post('/api/marks', (req, res) => {
-  const { id, studentId, exam, score, type, date } = req.body;
+  const { id, studentId, exam, score, type } = req.body;
+  let date = req.body.date;
+  if (!date) {
+    date = new Date().toISOString();
+  }
   const checkSql = 'SELECT id FROM marks WHERE studentId = ? AND exam = ? AND date = ? AND type = ?';
   db.get(checkSql, [studentId, exam, date, type], (err, row) => {
     if (err) {
@@ -482,7 +531,11 @@ app.get('/api/attendance', (req, res) => {
 });
 
 app.post('/api/attendance', (req, res) => {
-  const { studentId, date, type, present, inTime, outTime } = req.body;
+  const { studentId, type, present, inTime, outTime } = req.body;
+  let date = req.body.date;
+  if (!date) {
+    date = new Date().toISOString();
+  }
   const sql = 'INSERT INTO attendance (studentId, date, type, present, inTime, outTime) VALUES (?, ?, ?, ?, ?, ?)';
   db.run(sql, [studentId, date, type, present, inTime, outTime], function (err) {
     if (err) {

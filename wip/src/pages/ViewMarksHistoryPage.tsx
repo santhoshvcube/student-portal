@@ -1,55 +1,96 @@
-import React from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, Award } from 'lucide-react';
+import { BarChart3, TrendingUp, Award, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { useStudents } from '../context/StudentContext';
+import { useAuth } from '../auth/AuthContext';
 
 const ViewMarksHistoryPage: React.FC = () => {
+  const { user } = useAuth();
+  const { students } = useStudents();
+  const [selectedMonth, setSelectedMonth] = useState('');
+
+  const student = students.find(s => s.id === user?.id);
+
+  const marks = useMemo(() => {
+    if (!student) return [];
+    if (!selectedMonth) return student.marks || [];
+    return (student.marks || []).filter(m => m.date?.startsWith(selectedMonth));
+  }, [student, selectedMonth]);
+
+  const downloadCSV = () => {
+    if (!student) return;
+    const header = ['exam','type','score','date'];
+    const rows = marks.map(m => `${JSON.stringify(m.exam)},${JSON.stringify(m.type)},${JSON.stringify(m.score)},${JSON.stringify(m.date)}`);
+    const csv = [header.join(',')].concat(rows).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${student.name.replace(/\s+/g,'_')}_marks${selectedMonth ? `_${selectedMonth}` : ''}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const tableRef = useRef<HTMLDivElement | null>(null);
+  const downloadPDF = async () => {
+    if (!tableRef.current) return;
+    try {
+      const canvas = await html2canvas(tableRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save(`${student?.name?.replace(/\s+/g, '_')}_marks${selectedMonth ? `_${selectedMonth}` : ''}.pdf`);
+    } catch (err) {
+      console.error('PDF generation failed', err);
+      alert('Failed to generate PDF.');
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gradient-to-br from-rose-50 to-pink-100 p-8">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="max-w-4xl mx-auto text-center"
-      >
-        <div className="mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-rose-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Award className="w-10 h-10 text-white" />
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-4xl mx-auto">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-500 rounded-full flex items-center justify-center">
+              <Award className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">My Marks History</h1>
+              <p className="text-gray-600">View your examination results and academic progress</p>
+            </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">My Marks History</h1>
-          <p className="text-xl text-gray-600">View your examination results and academic progress</p>
+          <div className="flex items-center gap-3">
+            <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="p-2 border rounded" />
+            <button onClick={downloadCSV} className="bg-green-500 text-white p-2 rounded flex items-center gap-2"><Download /> Download</button>
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="p-6 border-2 border-dashed border-rose-300 rounded-xl hover:border-rose-400 transition-colors"
-            >
-              <BarChart3 className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Score Analysis</h3>
-              <p className="text-gray-600">Detailed breakdown of marks by subject and exam type</p>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="p-6 border-2 border-dashed border-pink-300 rounded-xl hover:border-pink-400 transition-colors"
-            >
-              <TrendingUp className="w-12 h-12 text-pink-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Progress Tracking</h3>
-              <p className="text-gray-600">Monitor your academic improvement over time</p>
-            </motion.div>
-          </div>
-
-          <div className="mt-8 p-6 bg-gray-50 rounded-xl">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Marks Features</h3>
-            <ul className="text-left space-y-2 text-gray-600">
-              <li>• Comprehensive marks table with filters</li>
-              <li>• Subject-wise performance charts</li>
-              <li>• Grade point average calculations</li>
-              <li>• Exam-wise comparison and trends</li>
-              <li>• Performance ranking within batch</li>
-              <li>• Download detailed mark sheets</li>
-            </ul>
+        <div className="bg-white rounded-2xl shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Marks</h2>
+          <div className="overflow-x-auto" ref={tableRef}>
+            <table className="w-full table-auto border-collapse">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="p-2 border">Exam</th>
+                  <th className="p-2 border">Type</th>
+                  <th className="p-2 border">Score</th>
+                  <th className="p-2 border">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(!marks || marks.length === 0) && <tr><td colSpan={4} className="p-4 text-center text-gray-500">No marks found.</td></tr>}
+                {marks.map((m) => (
+                  <tr key={m.id} className="hover:bg-gray-50">
+                    <td className="p-2 border">{m.exam}</td>
+                    <td className="p-2 border">{m.type}</td>
+                    <td className="p-2 border">{m.score}</td>
+                    <td className="p-2 border">{m.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </motion.div>

@@ -26,14 +26,14 @@ import toast from 'react-hot-toast';
 
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { students, setStudents, loading } = useStudents();
+  const { students: studentList, setStudents, loading, schedules, batches, refreshData } = useStudents();
   const [isQRCodeModalOpen, setIsQRCodeModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
   const [isIdCardModalOpen, setIsIdCardModalOpen] = useState(false);
-  const idCardRef = useRef<HTMLDivElement>(null);
+  const idCardRef = useRef<HTMLDivElement | null>(null);
 
-  const studentData = students.find(s => s.id === user?.id);
+  const studentData = studentList.find(s => s.id === user?.id);
 
   useEffect(() => {
     if (studentData && !studentData.profileComplete) {
@@ -202,6 +202,75 @@ const StudentDashboard: React.FC = () => {
           </motion.div>
         </motion.div>
 
+        {/* Batch Tasks for Student */}
+        <div className="mt-8 max-w-7xl mx-auto">
+          <div className="bg-white rounded-2xl shadow p-6">
+            <h3 className="text-xl font-semibold mb-4">Assigned Tasks / Schedules</h3>
+            <p className="text-sm text-gray-600 mb-4">Tasks assigned to your batch will appear here in real-time.</p>
+            <div className="space-y-3">
+              {schedules.filter(s => s.batchId === studentData.batchId).length === 0 && (
+                <div className="text-gray-500">No tasks assigned to your batch yet.</div>
+              )}
+              {schedules.filter(s => s.batchId === studentData.batchId).slice(0,5).map(s => {
+                const b = batches.find(bb => bb.id === s.batchId);
+                return (
+                  <div key={s.id} className="p-3 border rounded flex justify-between items-center">
+                    <div>
+                      <div className="font-semibold">{s.task}</div>
+                      <div className="text-xs text-gray-500">Assigned: {s.assignedDate} • Due: {s.submissionDate}</div>
+                      <div className="text-xs mt-1">
+                        Status: <span className={`font-semibold ${s.status === 'completed' ? 'text-green-600' : s.status === 'wip' ? 'text-yellow-600' : 'text-gray-600'}`}>{s.status || 'pending'}</span>
+                        {s.submittedDateByStudent && <span className="ml-3 text-xs text-gray-500">• Submitted: {s.submittedDateByStudent}</span>}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-700 text-right flex flex-col items-end gap-2">
+                      <div>Batch: {b?.batchNumber || s.batchId}</div>
+                      <div className="flex gap-2">
+                        {s.status !== 'completed' && (
+                          <button onClick={async () => {
+                            const today = new Date().toISOString().slice(0,10);
+                            try {
+                              const res = await fetch(`/api/schedules/${s.id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ status: 'completed', submittedDateByStudent: today })
+                              });
+                              if (res.ok) {
+                                refreshData();
+                              } else {
+                                alert('Failed to mark completed');
+                              }
+                            } catch (err) {
+                              console.error(err);
+                              alert('Error marking task');
+                            }
+                          }} className="px-2 py-1 bg-green-500 text-white rounded">Mark Completed</button>
+                        )}
+                        <button onClick={async () => {
+                          try {
+                            const res = await fetch(`/api/schedules/${s.id}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ status: s.status === 'wip' ? 'pending' : 'wip' })
+                            });
+                            if (res.ok) {
+                              refreshData();
+                            } else {
+                              alert('Failed to update status');
+                            }
+                          } catch (err) {
+                            console.error(err);
+                            alert('Error updating status');
+                          }
+                        }} className="px-2 py-1 bg-yellow-400 text-black rounded">{s.status === 'wip' ? 'Mark Pending' : 'Mark WIP'}</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
         {/* QR Code Modal */}
         <Modal isOpen={isQRCodeModalOpen} onClose={() => setIsQRCodeModalOpen(false)} title="Your Attendance QR Code" size="sm">
           <div className="flex flex-col items-center justify-center p-6">
